@@ -1,0 +1,8 @@
+*.pt
+*.onnx
+*.trt
+*.pyc
+venv/*
+__pycache__/*
+*.egg-info/
+*.egg
