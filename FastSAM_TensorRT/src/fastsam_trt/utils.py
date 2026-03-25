@@ -3,18 +3,11 @@ import numpy as np
 import torch
 from ultralytics.yolo.utils import ops
 
+from onnx_trt_tools import letterbox_preprocess
+
 
 def preprocess(img_origin, imgsz=256):
-    h, w = img_origin.shape[:2]
-    scale = min(imgsz / h, imgsz / w)
-    nw, nh = int(round(w * scale)), int(round(h * scale))
-    dw, dh = (imgsz - nw) / 2, (imgsz - nh) / 2
-    left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
-    top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
-    resized = cv2.resize(cv2.cvtColor(img_origin, cv2.COLOR_BGR2RGB), (nw, nh))
-    inp = cv2.copyMakeBorder(resized, top, bottom, left, right,
-                             cv2.BORDER_CONSTANT, value=(114, 114, 114))
-    return np.transpose(np.array([inp], dtype=np.float32) / 255.0, (0, 3, 1, 2))
+    return letterbox_preprocess(img_origin, imgsz)
 
 
 def postprocess(preds, img, orig_img, retina_masks=True, conf=0.25, iou=0.7, agnostic_nms=False):

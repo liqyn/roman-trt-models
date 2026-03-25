@@ -3,14 +3,18 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fastsam-trt"
+name = "onnx-trt-tools"
 version = "0.1.0"
-description = "TensorRT-accelerated FastSAM inference"
+description = "Shared TensorRT engine, conversion, and preprocessing utilities"
 requires-python = ">=3.8"
 dependencies = [
-    "onnx-trt-tools",
-    "ultralytics",
-    "onnxruntime-gpu",
+    "numpy",
+    "opencv-python",
+    "torch",
+    "onnx",
+    "onnxsim",
+    "tensorrt",
+    "pycuda",
 ]
 
 [tool.setuptools.packages.find]

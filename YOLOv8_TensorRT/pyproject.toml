@@ -8,15 +8,9 @@ version = "0.1.0"
 description = "TensorRT-accelerated YOLOv8 COCO object detection"
 requires-python = ">=3.8"
 dependencies = [
-    "numpy",
-    "opencv-python",
-    "torch",
+    "onnx-trt-tools",
     "ultralytics",
-    "onnx",
-    "onnxsim",
     "onnxruntime-gpu",
-    "tensorrt",
-    "pycuda",
 ]
 
 [tool.setuptools.packages.find]

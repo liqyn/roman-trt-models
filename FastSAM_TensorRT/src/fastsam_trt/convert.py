@@ -1,5 +1,6 @@
 import torch
-import tensorrt as trt
+
+from onnx_trt_tools import onnx2trt as _onnx2trt
 
 
 def pt2onnx(weights, output, img_size=256):
@@ -48,7 +49,7 @@ def pt2onnx(weights, output, img_size=256):
 
 
 def onnx2trt(onnx_path, output, img_size=256, opt_batch=1, max_batch=1, fp16=False):
-    """Convert an ONNX model to a TensorRT engine.
+    """Convert a FastSAM ONNX model to a TensorRT engine.
 
     Args:
         onnx_path: Path to the ONNX model file.
@@ -59,26 +60,9 @@ def onnx2trt(onnx_path, output, img_size=256, opt_batch=1, max_batch=1, fp16=Fal
         fp16: Enable FP16 precision in the TensorRT engine. Default False.
     """
     s = img_size
-    logger = trt.Logger(trt.Logger.VERBOSE)
-    builder = trt.Builder(logger)
-    network = builder.create_network(1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
-    parser = trt.OnnxParser(network, logger)
-
-    with open(onnx_path, "rb") as f:
-        if not parser.parse(f.read()):
-            for i in range(parser.num_errors):
-                print(parser.get_error(i))
-            raise RuntimeError("Failed to parse ONNX")
-
-    config = builder.create_builder_config()
-    if fp16:
-        config.set_flag(trt.BuilderFlag.FP16)
-    profile = builder.create_optimization_profile()
-    profile.set_shape("images", (1, 3, s, s), (opt_batch, 3, s, s), (max_batch, 3, s, s))
-    config.add_optimization_profile(profile)
-
-    engine = builder.build_serialized_network(network, config)
-    with open(output, "wb") as f:
-        f.write(engine)
-
+    _onnx2trt(
+        onnx_path, output, input_name="images",
+        min_sz=(1, s, s), opt_sz=(opt_batch, s, s), max_sz=(max_batch, s, s),
+        fp16=fp16,
+    )
     print(f"Saved FastSAM TRT engine to {output}")

@@ -1,5 +1,6 @@
 import torch
-import tensorrt as trt
+
+from onnx_trt_tools import onnx2trt as _onnx2trt
 
 
 def pt2onnx(model_name, output, img_size=256):
@@ -90,30 +91,9 @@ def onnx2trt(onnx_path, output, img_size=256, min_sz=None, opt_sz=None, max_sz=N
         min_sz = (1, h, w)
         opt_sz = (1, h, w)
         max_sz = (1, h, w)
-
-    logger = trt.Logger(trt.Logger.VERBOSE)
-    builder = trt.Builder(logger)
-    network = builder.create_network(1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
-    parser = trt.OnnxParser(network, logger)
-
-    with open(onnx_path, "rb") as f:
-        if not parser.parse(f.read()):
-            for i in range(parser.num_errors):
-                print(parser.get_error(i))
-            raise RuntimeError("Failed to parse ONNX")
-
-    config = builder.create_builder_config()
-    if fp16:
-        config.set_flag(trt.BuilderFlag.FP16)
-    profile = builder.create_optimization_profile()
-    profile.set_shape("pixel_values",
-                      (min_sz[0], 3, min_sz[1], min_sz[2]),
-                      (opt_sz[0], 3, opt_sz[1], opt_sz[2]),
-                      (max_sz[0], 3, max_sz[1], max_sz[2]))
-    config.add_optimization_profile(profile)
-
-    engine = builder.build_serialized_network(network, config)
-    with open(output, "wb") as f:
-        f.write(engine)
-
+    _onnx2trt(
+        onnx_path, output, input_name="pixel_values",
+        min_sz=min_sz, opt_sz=opt_sz, max_sz=max_sz,
+        fp16=fp16,
+    )
     print(f"Saved DINOv2 TRT engine to {output}")
