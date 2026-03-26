@@ -1,16 +1,11 @@
-![](assets/logo.png)
-
 # Fast Segment Anything — TensorRT
 
-[[`📕Paper`](https://arxiv.org/pdf/2306.12156.pdf)] [[`🤗HuggingFace Demo`](https://huggingface.co/spaces/An-619/FastSAM)] [[`Colab demo`](https://colab.research.google.com/drive/1oX14f6IneGGw612WgVlAiy91UHwFAvr9?usp=sharing)] [[`Replicate demo & API`](https://replicate.com/casia-iva-lab/fastsam)] [[`Model Zoo`](#model-checkpoints)] [[`BibTeX`](#citing-fastsam)]
+TensorRT deployment of [FastSAM](https://docs.ultralytics.com/models/fast-sam) from Ultralytics
 
-The **Fast Segment Anything Model(FastSAM)** is a CNN Segment Anything Model trained by only 2% of the SA-1B dataset published by SAM authors. The FastSAM achieve a comparable performance with
-the SAM method at **50× higher run-time speed**.
+**Refer from**
+[FastSAM](https://github.com/CASIA-IVA-Lab/FastSAM)
 
-**🍇 Refer from**
-[Original](https://github.com/CASIA-IVA-Lab/FastSAM)
-
-#### Rewritten by @andyli27 from https://github.com/ChuRuaNh0/FastSam_Awsome_TensorRT
+#### Rewritten by @liqyn from https://github.com/ChuRuaNh0/FastSam_Awsome_TensorRT
 
 ## Python API
 
@@ -22,6 +17,8 @@ from fastsam_trt import pt2onnx, onnx2trt
 pt2onnx("FastSAM-x.pt", "FastSAM-x_256.onnx", img_size=256)
 onnx2trt("FastSAM-x_256.onnx", "FastSAM-x_256.trt", img_size=256, fp16=True)
 ```
+
+`img_size` is the square input resolution. Images are letterbox-preprocessed (aspect-ratio preserving resize + padding to `img_size × img_size`) during inference, so the engine always receives a fixed square input. Larger values increase accuracy but cost more compute.
 
 ### Run inference
 
@@ -35,6 +32,8 @@ model.warmup()
 img = cv2.imread("image.jpg")
 masks = model.segment(img)  # (N, H, W) tensor on GPU
 ```
+
+`img_size` must match the engine's input resolution. Input images of any size are automatically letterbox-preprocessed to fit.
 
 ### Visualize masks
 
@@ -53,31 +52,16 @@ cv2.imwrite("result.jpg", viz)
 
 From the `scripts/` directory:
 
-### Export ONNX
-
 ```bash
+# Export ONNX
 python3 pt2onnx.py --weights <pt_weights_path> --output <onnx_path> --img-size <size>
-```
 
-### Export TensorRT
-
-```bash
+# Export TensorRT
 python3 onnx2trt.py --onnx <onnx_path> --output <trt_path> --img-size <size> \
-    --opt-batch <optimal_batch_size> --max-batch <max_batch_size>
+    --opt-batch <optimal_batch_size> --max-batch <max_batch_size> [--fp16]
 
-# Add --fp16 for half-precision
-python3 onnx2trt.py --onnx <onnx_path> --output <trt_path> --fp16
-```
-
-### Inference
-
-```bash
-# Default PyTorch model
+# Inference (Ultralytics, ONNX, TensorRT)
 python3 infer_default.py --weights <pt_weights_path> --img-size <size>
-
-# ONNX model
 python3 infer_onnx.py --weights <onnx_path> --img-size <size>
-
-# TensorRT engine
 python3 infer_trt.py --weights <trt_path> --img-size <size>
 ```

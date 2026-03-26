@@ -1,11 +1,6 @@
 # DINOv2 — TensorRT
 
-TensorRT deployment of [`facebook/dinov2-base`](https://huggingface.co/facebook/dinov2-base) from HuggingFace Transformers.
-
-**Model details**
-- Patch size: 14 px
-- Feature dimension: 768
-- Output: `last_hidden_state` — shape `(1, num_patches+1, 768)`; index 0 is the CLS token, indices 1: are patch tokens
+TensorRT deployment of [`facebook/dinov2-base`](https://huggingface.co/facebook/dinov2-base) (and other DINO models) from HuggingFace Transformers.
 
 **Refer from** [facebookresearch/dinov2](https://github.com/facebookresearch/dinov2)
 
@@ -29,7 +24,16 @@ onnx2trt("dinov2-base_256.onnx", "dinov2-base_dynamic.trt",
          fp16=True)
 ```
 
+`img_size` accepts a single int (square) or an `(h, w)` tuple.
+
+`min_sz`, `opt_sz`, `max_sz` are `(batch, h, w)` tuples that define the TensorRT optimization profile for dynamic input sizes (minimum, optimal, maximum). When provided, `img_size` is ignored.
+
 ### Run inference
+
+`img_size` controls preprocessing behavior:
+
+- **`int`** — aspect-ratio preserving resize: the shortest side is scaled to `img_size`, and the aspect ratio is preserved. Use this with a dynamic-size engine.
+- **`(h, w)` tuple** — exact resize to the given dimensions. Use this with an appropriate fixed-size engine.
 
 ```python
 import cv2
@@ -45,8 +49,10 @@ model.warmup()
 
 img = cv2.imread("image.jpg")
 features = model.embed(img)               # (1, num_patches+1, 768)
-patches  = model.embed(img, reshape=True) # (1, h, w, 768) — CLS token dropped, reshaped to preprocessed image dimensions
+patches  = model.embed(img, reshape=True) # (1, h, w, 768) — CLS token dropped
 ```
+
+For dynamic engines, the preprocessed dimensions must fall within the `min_sz`–`max_sz` range defined during conversion.
 
 ### Visualize features
 
@@ -59,41 +65,21 @@ cv2.imwrite("features.jpg", viz)
 
 ## CLI Scripts
 
-From the `scripts/` directory:
-
-### Export ONNX
+From the `scripts/` directory. All scripts mirror the Python API above.
 
 ```bash
+# Export ONNX
 python3 pt2onnx.py --model <hf_model_name_or_path> --output <onnx_path> --img-size <h> [<w>]
-```
 
-`--img-size` accepts a single int (square) or two ints `h w`. Default: `256`.
+# Export TensorRT (fixed-size)
+python3 onnx2trt.py --onnx <onnx_path> --output <trt_path> --img-size <h> [<w>] [--fp16]
 
-### Export TensorRT
-
-```bash
-# Fixed-size engine
-python3 onnx2trt.py --onnx <onnx_path> --output <trt_path> --img-size <h> [<w>]
-
-# Dynamic-size engine
+# Export TensorRT (dynamic-size)
 python3 onnx2trt.py --onnx <onnx_path> --output <trt_path> \
-    --min-sz 1,256,256 --opt-sz 1,256,512 --max-sz 1,768,768
+    --min-sz 1,256,256 --opt-sz 1,256,512 --max-sz 1,768,768 [--fp16]
 
-# Add --fp16 for half-precision
-python3 onnx2trt.py --onnx <onnx_path> --output <trt_path> --fp16
-```
-
-`--min-sz`, `--opt-sz`, `--max-sz` are comma-separated `batch,h,w` tuples (minimum, optimal, maximum), used to export models that support dynamic input sizes. When provided, `--img-size` is ignored.
-
-### Inference
-
-```bash
-# Default HuggingFace model
+# Inference (HF transformers, ONNX, TensorRT)
 python3 infer_default.py --model <hf_model_name_or_path> --img-size <h> [<w>]
-
-# ONNX model
 python3 infer_onnx.py --weights <onnx_path> --img-size <h> [<w>]
-
-# TensorRT engine
 python3 infer_trt.py --weights <trt_path> --img-size <h> [<w>]
 ```
