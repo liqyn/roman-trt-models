@@ -59,5 +59,5 @@ class DINOv2_TRT(TRTEngine):
             out = reshape_patches(out, inp.shape[2:])
         t3 = time.time()
         if self.timing:
-            print(f"[DINOv2_TRT] preprocess: {t1-t0:.4f}s, inference: {t2-t1:.4f}s, postprocess: {t3-t2:.4f}s")
+            print(f"{'[DINOv2_TRT]':<14} preprocess: {t1-t0:.4f}s, inference: {t2-t1:.4f}s, postprocess: {t3-t2:.4f}s")
         return out

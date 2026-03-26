@@ -60,5 +60,5 @@ class FastSAM_TRT(TRTEngine):
         result = postprocess(preds, inp, bgr_img, self.retina_masks, self.conf, self.iou, self.agnostic_nms)
         t3 = time.time()
         if self.timing:
-            print(f"[FastSAM_TRT] preprocess: {t1-t0:.4f}s, inference: {t2-t1:.4f}s, postprocess: {t3-t2:.4f}s")
+            print(f"{'[FastSAM_TRT]':<14} preprocess: {t1-t0:.4f}s, inference: {t2-t1:.4f}s, postprocess: {t3-t2:.4f}s")
         return result[0]

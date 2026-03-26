@@ -63,5 +63,5 @@ class YOLOv8_TRT(TRTEngine):
         )
         t3 = time.time()
         if self.timing:
-            print(f"[YOLOv8_TRT] preprocess: {t1-t0:.4f}s, inference: {t2-t1:.4f}s, postprocess: {t3-t2:.4f}s")
+            print(f"{'[YOLOv8_TRT]':<14} preprocess: {t1-t0:.4f}s, inference: {t2-t1:.4f}s, postprocess: {t3-t2:.4f}s")
         return result[0]
