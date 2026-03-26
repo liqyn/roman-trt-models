@@ -3,8 +3,7 @@ import time
 import argparse
 import torch
 from transformers import AutoModel
-from dinov2_trt import visualize_features
-from dinov2_trt.utils import preprocess
+from dinov2_trt import preprocess, visualize_features
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

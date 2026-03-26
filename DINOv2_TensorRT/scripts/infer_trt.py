@@ -1,6 +1,6 @@
 import cv2
 import argparse
-from dinov2_trt import DINOv2_TRT, preprocess, visualize_features
+from dinov2_trt import DINOv2_TRT, visualize_features
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -18,5 +18,4 @@ if __name__ == '__main__':
     print("[Output]:", last_hidden_state.shape)  # (1, num_patches+1, 768)
 
     viz = visualize_features(last_hidden_state, img_shape=img.shape[:2])
-    viz = cv2.resize(viz, img.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
     cv2.imwrite("images/cat_trt.jpg", viz)

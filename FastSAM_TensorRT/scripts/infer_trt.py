@@ -1,9 +1,5 @@
-import tensorrt as trt
-import pycuda.driver as cuda
 import numpy as np
-import torch
 import cv2
-import time
 import argparse
 from random import randint
 from fastsam_trt import FastSAM_TRT, overlay
