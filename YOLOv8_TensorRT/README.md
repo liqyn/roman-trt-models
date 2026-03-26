@@ -13,7 +13,7 @@ pt2onnx("yolov8n.pt", "yolov8n_640.onnx", img_size=640)
 onnx2trt("yolov8n_640.onnx", "yolov8n_640.trt", img_size=640, fp16=True)
 ```
 
-`img_size` is the square input resolution. Images are letterbox-preprocessed (aspect-ratio preserving resize + padding to `img_size × img_size`) during inference, so the engine always receives a fixed square input. Common values: `640` (default, good balance), `320` (faster), `1280` (higher accuracy).
+`img_size` is the square input resolution. Images are letterbox-preprocessed (aspect-ratio preserving resize + padding to `img_size × img_size`) during inference, so the engine always receives a fixed square input.
 
 ### Run inference
 
