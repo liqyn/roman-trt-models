@@ -1,8 +1,6 @@
 import numpy as np
 import torch
 import tensorrt as trt
-import pycuda.autoinit
-import pycuda.driver as cuda
 
 TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
 trt.init_libnvinfer_plugins(TRT_LOGGER, '')
@@ -21,6 +19,7 @@ class TRTEngine:
 
     Handles engine loading, I/O buffer allocation, inference execution,
     and warmup. Supports both fixed and dynamic input shapes.
+    Uses only torch.cuda for GPU memory and stream management (no pycuda).
 
     Args:
         model_weights: Path to serialized TensorRT engine (.trt file).
@@ -34,7 +33,7 @@ class TRTEngine:
         with open(model_weights, 'rb') as f, trt.Runtime(TRT_LOGGER) as runtime:
             self.engine = runtime.deserialize_cuda_engine(f.read())
         self.context = self.engine.create_execution_context()
-        self.stream = cuda.Stream()
+        self.stream = torch.cuda.Stream()
 
         self.input_name = self.engine.get_tensor_name(0)
         self._current_input_shape = None
@@ -64,12 +63,12 @@ class TRTEngine:
 
         self.context.set_input_shape(self.input_name, input_shape)
 
-        # Input buffer
+        # Input buffers: pinned host tensor + CUDA device tensor
         dtype = self.engine.get_tensor_dtype(self.input_name)
-        np_dtype = trt.nptype(dtype)
-        self.input_host = cuda.pagelocked_empty(int(np.prod(input_shape)), np_dtype)
-        self.input_dev = cuda.mem_alloc(self.input_host.nbytes)
-        self.context.set_tensor_address(self.input_name, int(self.input_dev))
+        torch_dtype = _trt_to_torch[dtype]
+        self.input_host = torch.empty(input_shape, dtype=torch_dtype).pin_memory()
+        self.input_dev = torch.empty(input_shape, dtype=torch_dtype, device='cuda')
+        self.context.set_tensor_address(self.input_name, self.input_dev.data_ptr())
 
         # Output buffers (allocate ALL outputs for TRT, read only self.output_names)
         self.output_tensors = {}
@@ -83,9 +82,10 @@ class TRTEngine:
 
     def _infer(self, inp):
         self._setup_buffers(inp.shape)
-        np.copyto(self.input_host, inp.flatten())
-        cuda.memcpy_htod_async(self.input_dev, self.input_host, self.stream)
-        self.context.execute_async_v3(stream_handle=self.stream.handle)
+        self.input_host.copy_(torch.from_numpy(inp))
+        with torch.cuda.stream(self.stream):
+            self.input_dev.copy_(self.input_host, non_blocking=True)
+        self.context.execute_async_v3(stream_handle=self.stream.cuda_stream)
         self.stream.synchronize()
         return [self.output_tensors[n] for n in self.output_names]
 
